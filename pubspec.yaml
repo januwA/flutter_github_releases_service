@@ -1,8 +1,8 @@
 name: flutter_github_releases_service
-description: A new Flutter package project.
+description: Use github releases to update the app.
 version: 0.1.0
-author:
-homepage:
+author: Ajanuw <ajanuw1995@gmail.com>
+homepage: https://github.com/januwA/flutter_github_releases_service
 
 environment:
   sdk: '>=2.1.0 <3.0.0'
@@ -10,20 +10,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  built_value:
-  built_collection:
-  http:
-  flutter_downloader:
-  path:
-  install_plugin:
-  permission_handler:
-  package_info:
-  path_provider:
+  built_value: ^6.7.0
+  built_collection: ^4.2.2
+  http: ^0.12.0+2
+  flutter_downloader: ^1.1.9
+  path: ^1.6.4
+  install_plugin: ^2.0.1
+  permission_handler: ^3.2.1+1
+  package_info: ^0.4.0+6
+  path_provider: ^1.2.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  build_runner:
+  build_runner: ^1.6.5
   built_value_generator:
 
 flutter:

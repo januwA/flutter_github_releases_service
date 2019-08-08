@@ -1,3 +1,3 @@
-## [0.0.1] - TODO: Add release date.
+## [0.1.0] - 2019-8-8
 
-* TODO: Describe initial release.
+* Use github releases to update the app.
