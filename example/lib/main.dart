@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_github_releases_service/dto/github_releases/github_releases.dto.dart';
 import 'package:flutter_github_releases_service/flutter_github_releases_service.dart';
 
 void main() => runApp(MyApp());
@@ -19,16 +18,13 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  GithubReleasesService githubReleasesService = GithubReleasesService(
+  GithubReleasesService grs = GithubReleasesService(
     owner: 'januwA',
     repo: 'flutter_anime_app',
   );
-
-  Future<GithubReleasesDto> get latest => githubReleasesService.latest;
-
   @override
   void dispose() {
-    githubReleasesService.dispose();
+    grs.dispose();
     super.dispose();
   }
 
@@ -38,18 +34,15 @@ class _HomePageState extends State<HomePage> {
       body: Center(
         child: RaisedButton(
           onPressed: () async {
-            print(
-                'latestVersion: ' + await githubReleasesService.latestVersion);
-            print('localVersion: ' + await githubReleasesService.localVersion);
-            print(await githubReleasesService.isNeedUpdate);
+            print('latestVersion: ' + await grs.latestVersion);
+            print('localVersion: ' + await grs.localVersion);
+            print(await grs.isNeedUpdate);
 
-            if (await githubReleasesService.isNeedUpdate) {
-              var _latest = await latest;
-
+            if (await grs.isNeedUpdate) {
               try {
-                githubReleasesService.downloadApk(
-                  downloadUrl: _latest.assets.first.browserDownloadUrl,
-                  apkName: _latest.assets.first.name,
+                grs.downloadApk(
+                  downloadUrl: grs.latestSync.assets.first.browserDownloadUrl,
+                  apkName: grs.latestSync.assets.first.name,
                 );
               } catch (e) {
                 print('安装失败: $e');

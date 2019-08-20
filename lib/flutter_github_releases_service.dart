@@ -3,12 +3,12 @@ library flutter_github_releases_service;
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_github_releases_service/dto/github_releases/github_releases.dto.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info/package_info.dart';
 import 'package:path/path.dart' as path;
 import 'package:install_plugin/install_plugin.dart' show InstallPlugin;
-import 'package:meta/meta.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
@@ -21,20 +21,21 @@ class GithubReleasesService {
 
   final String owner;
   final String repo;
+  final String baseUrl = 'https://api.github.com/repos';
+  String get releasesUrl => '$baseUrl/$owner/$repo/releases';
+  String get latestUrl => '$baseUrl/$owner/$repo/releases/latest';
 
   bool _permissisonReady = false;
 
   List<GithubReleasesDto> _releases;
-  String get releasesUrl =>
-      'https://api.github.com/repos/$owner/$repo/releases';
-  Future<List<GithubReleasesDto>> get releases async =>
-      _releases != null ? _releases : await getReleases();
+  List<GithubReleasesDto> get releasesSync => _releases;
+  Future<List<GithubReleasesDto>> get releases async => _releases ?? await getReleases();
   Future<List<GithubReleasesDto>> getReleases() async {
     try {
       var r = await http.get(releasesUrl);
       if (r.statusCode != HttpStatus.ok) {
         return Future.error(
-            'GithubReleasesService Error: Get latest release $latestUrl statusCode ${r.statusCode}');
+            'GithubReleasesService Error: releases $latestUrl statusCode ${r.statusCode}');
       }
       List body = jsonDecode(r.body);
       _releases = body
@@ -48,16 +49,14 @@ class GithubReleasesService {
   }
 
   GithubReleasesDto _latest;
-  String get latestUrl =>
-      'https://api.github.com/repos/$owner/$repo/releases/latest';
-  Future<GithubReleasesDto> get latest async =>
-      _latest != null ? _latest : await getLatest();
+  GithubReleasesDto get latestSync => _latest;
+  Future<GithubReleasesDto> get latest async => _latest ?? await getLatest();
   Future<GithubReleasesDto> getLatest() async {
     try {
       var r = await http.get(latestUrl);
       if (r.statusCode != HttpStatus.ok) {
         return Future.error(
-            'GithubReleasesService Error: Get latest release $latestUrl statusCode ${r.statusCode}');
+            'GithubReleasesService Error: latest $latestUrl statusCode ${r.statusCode}');
       }
       _latest = GithubReleasesDto.fromJson(r.body);
       return _latest;
@@ -68,37 +67,42 @@ class GithubReleasesService {
 
   /// latest version
   Future<String> get latestVersion async => (await latest).tagName;
+  String get latestVersionSync => _latest?.tagName;
 
   /// local version
+  String _localVersion;
+  String get localVersionSync => _localVersion;
   Future<String> get localVersion async =>
-      (await PackageInfo.fromPlatform()).version;
+      _localVersion ?? await _getLocalVersion();
+  Future<String> _getLocalVersion() async {
+    _localVersion = (await PackageInfo.fromPlatform()).version;
+    return _localVersion;
+  }
 
   /// com.xxx
   Future<String> get packageName async =>
       (await PackageInfo.fromPlatform()).packageName;
 
-  /// 注意：使用这个属性你的版本控制必须是标准的x.y.z语义
+  /// Note: To use this property your version control must be standard x.y.z semantics
   ///
-  /// 否则你需要自己判断
-  ///
-  /// 是否需要更新
+  /// Otherwise you need to judge for yourself
   ///
   /// See slso:
   ///
-  /// * [语义化版本](https://semver.org/lang/zh-CN/)
-  Future<bool> get isNeedUpdate async {
-    VersionXYZ localXyz = VersionXYZ(await localVersion);
-    VersionXYZ latestXyz = VersionXYZ(await latestVersion);
-    return latestXyz > localXyz;
-  }
+  /// * [Semantic Versioning 2.0.0](https://semver.org/)
+  Future<bool> get isNeedUpdate async =>
+      VersionXYZ(await latestVersion) > VersionXYZ(await localVersion);
 
-  /// 下载:
+  /// download apk and install:
   ///
   /// ```dart
-  /// downloadApk(
-  ///   downloadUrl: latest.assets.first.browserDownloadUrl,
-  ///   apkName: latest.assets.first.name,
-  /// );
+  /// // If there is a new version and the user agrees
+  /// if(isNeedUpdate && alert('Do you need to update?')){
+  ///   downloadApk(
+  ///     downloadUrl: latestSync.assets.first.browserDownloadUrl,
+  ///     apkName: latestSync.assets.first.name,
+  ///   );
+  /// }
   /// ```
   ///
   /// See also:
@@ -117,16 +121,17 @@ class GithubReleasesService {
     if (!_permissisonReady) return;
 
     Directory savedDir = await getExternalStorageDirectory();
-    // 目录不存在则创建
+    // Create if the directory does not exist
     if (!await savedDir.exists()) {
       savedDir.create();
     }
-    print('savedDir: ${savedDir.path}');
     final taskId = await FlutterDownloader.enqueue(
       url: downloadUrl,
       savedDir: savedDir.path,
-      showNotification: true, // 显示状态栏中的下载进度（适用于Android）
-      openFileFromNotification: true, // 点击通知打开下载的文件（适用于Android）
+      showNotification:
+          true, //show download progress in status bar (for Android)
+      openFileFromNotification:
+          true, // click on notification to open downloaded file (for Android)
     );
     FlutterDownloader.registerCallback((id, status, progress) async {
       if (status == DownloadTaskStatus.failed) {
@@ -176,9 +181,24 @@ class GithubReleasesService {
 }
 
 class VersionXYZ {
-  /// 'x.y.z'
-  VersionXYZ(String xyz) {
-    List<int> v = xyz.split('.').map<int>((s) => int.parse(s)).toList();
+  /// 'x.y.z' or [0,1,0]
+  ///
+  /// ```dart
+  /// assert(VersionXYZ('5.0.2') > VersionXYZ('5.0.1'), true);
+  /// assert(VersionXYZ('5.0.2') > VersionXYZ([5,0,1]), true);
+  /// ```
+  ///
+  /// See also:
+  ///
+  /// * [Semantic Versioning 2.0.0](https://semver.org/)
+  ///
+  VersionXYZ(dynamic xyz) {
+    var v;
+    if (xyz is String) {
+      v = xyz.split('.').map<int>((s) => int.parse(s)).toList();
+    } else if (xyz is List<int>) {
+      v = xyz;
+    }
     x = v[0];
     y = v[1];
     z = v[2];
