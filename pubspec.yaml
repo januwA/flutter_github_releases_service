@@ -1,6 +1,6 @@
 name: flutter_github_releases_service
 description: Use github releases to update the app.
-version: 0.2.1
+version: 0.2.3
 author: Ajanuw <ajanuw1995@gmail.com>
 homepage: https://github.com/januwA/flutter_github_releases_service
 
@@ -13,12 +13,18 @@ dependencies:
   built_value: ^6.7.1
   built_collection: ^4.2.2
   http: ^0.12.0+2
-  flutter_downloader: ^1.2.2
   path: ^1.6.4
   install_plugin: ^2.0.1
   permission_handler: ^3.2.2
   package_info: ^0.4.0+6
   path_provider: ^1.3.0
+
+  # 紧急修复BUG
+  # flutter_downloader: ^1.2.2
+  flutter_downloader:
+    git:
+      url: https://github.com/fluttercommunity/flutter_downloader.git
+      ref: refactor 
 
 dev_dependencies:
   test:
