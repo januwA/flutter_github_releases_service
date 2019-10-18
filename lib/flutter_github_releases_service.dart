@@ -17,7 +17,9 @@ class GithubReleasesService {
   GithubReleasesService({
     @required this.owner,
     @required this.repo,
-  });
+  }) {
+    FlutterDownloader.initialize();
+  }
 
   final String owner;
   final String repo;
@@ -29,7 +31,8 @@ class GithubReleasesService {
 
   List<GithubReleasesDto> _releases;
   List<GithubReleasesDto> get releasesSync => _releases;
-  Future<List<GithubReleasesDto>> get releases async => _releases ?? await getReleases();
+  Future<List<GithubReleasesDto>> get releases async =>
+      _releases ?? await getReleases();
   Future<List<GithubReleasesDto>> getReleases() async {
     try {
       var r = await http.get(releasesUrl);

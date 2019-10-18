@@ -4,8 +4,6 @@ Use github releases to update the app.
 
 Note: This has only been tested on Android.
 
-
-
 ## install
 ```
 dependencies:
@@ -34,7 +32,7 @@ See also: [flutter_downloader](https://pub.flutter-io.cn/packages/flutter_downlo
         </activity>
 
         <!-- new -->
-        <provider android:name="vn.hunghd.flutterdownloader.DownloadedFileProvider" android:authorities="${applicationId}.flutter_downloader.provider" android:exported="false" android:grantUriPermissions="true">
+        <provider android:name="vn.hunghd.flutterdownloader.DownloadedFileProvider" android:authorities="${applicationId}.flutter_downloader.provider" android:exported="false" android:grantUriPeamissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/provider_paths"/>
         </provider>
 
