@@ -10,6 +10,44 @@ dependencies:
   flutter_github_releases_service:
 ```
 
+## Configure Application
+
+
+Java:
+```java
+// MyApplication.java
+
+package com.example.flutter_demo;  // Set your package name
+
+import io.flutter.app.FlutterApplication;
+import io.flutter.plugin.common.PluginRegistry;
+import io.flutter.plugins.GeneratedPluginRegistrant;
+
+public class MyApplication extends FlutterApplication implements PluginRegistry.PluginRegistrantCallback {
+    @Override
+    public void registerWith(PluginRegistry registry) {
+        GeneratedPluginRegistrant.registerWith(registry);
+    }
+}
+```
+
+Or Kotlin:
+
+```kt
+// MyApplication.kt
+package com.example.flutter_demo // Set your package name
+
+import io.flutter.app.FlutterApplication
+import io.flutter.plugin.common.PluginRegistry;
+import io.flutter.plugins.GeneratedPluginRegistrant
+
+internal class MyApplication : FlutterApplication(), PluginRegistry.PluginRegistrantCallback {
+    override fun registerWith(registry: PluginRegistry) {
+        GeneratedPluginRegistrant.registerWith(registry)
+    }
+}
+```
+
 ## 'android\app\src\main\AndroidManifest.xml'
 See also: [flutter_downloader](https://pub.flutter-io.cn/packages/flutter_downloader)
 ```xml
@@ -22,7 +60,11 @@ See also: [flutter_downloader](https://pub.flutter-io.cn/packages/flutter_downlo
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <!-- new -->
     
-    <application android:name="io.flutter.app.FlutterApplication" android:label="example" android:icon="@mipmap/ic_launcher">
+    <application 
+        <!-- android:name="io.flutter.app.FlutterApplication" -->
+         android:name=".MyApplication"
+         android:label="example" 
+         android:icon="@mipmap/ic_launcher">
         <activity android:name=".MainActivity" android:launchMode="singleTop" android:theme="@style/LaunchTheme" android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:hardwareAccelerated="true" android:windowSoftInputMode="adjustResize">
             <meta-data android:name="io.flutter.app.android.SplashScreenUntilFirstFrame" android:value="true" />
             <intent-filter>
@@ -84,24 +126,33 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: RaisedButton(
-          onPressed: () async {
-            print('latestVersion: ' + await grs.latestVersion);
-            print('localVersion: ' + await grs.localVersion);
-            print(await grs.isNeedUpdate);
+        child: FutureBuilder(
+          future: grs.initialized,
+          builder: (c, snap) {
+            if (snap.connectionState == ConnectionState.done) {
+              return RaisedButton(
+                onPressed: () async {
+                  print('latestVersion: ' + await grs.latestVersion);
+                  print('localVersion: ' + await grs.localVersion);
+                  print(await grs.isNeedUpdate);
 
-            if (await grs.isNeedUpdate) {
-              try {
-                grs.downloadApk(
-                  downloadUrl: grs.latestSync.assets.first.browserDownloadUrl,
-                  apkName: grs.latestSync.assets.first.name,
-                );
-              } catch (e) {
-                print('安装失败: $e');
-              }
+                  if (await grs.isNeedUpdate) {
+                    try {
+                      grs.downloadApk(
+                        downloadUrl:
+                            grs.latestSync.assets.first.browserDownloadUrl,
+                        apkName: grs.latestSync.assets.first.name,
+                      );
+                    } catch (e) {
+                      print('安装失败: $e');
+                    }
+                  }
+                },
+                child: Text('Test'),
+              );
             }
+            return SizedBox();
           },
-          child: Text('Test'),
         ),
       ),
     );

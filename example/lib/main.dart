@@ -32,24 +32,33 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: RaisedButton(
-          onPressed: () async {
-            print('latestVersion: ' + await grs.latestVersion);
-            print('localVersion: ' + await grs.localVersion);
-            print(await grs.isNeedUpdate);
+        child: FutureBuilder(
+          future: grs.initialized,
+          builder: (c, snap) {
+            if (snap.connectionState == ConnectionState.done) {
+              return RaisedButton(
+                onPressed: () async {
+                  print('latestVersion: ' + await grs.latestVersion);
+                  print('localVersion: ' + await grs.localVersion);
+                  print(await grs.isNeedUpdate);
 
-            if (await grs.isNeedUpdate) {
-              try {
-                grs.downloadApk(
-                  downloadUrl: grs.latestSync.assets.first.browserDownloadUrl,
-                  apkName: grs.latestSync.assets.first.name,
-                );
-              } catch (e) {
-                print('安装失败: $e');
-              }
+                  if (await grs.isNeedUpdate) {
+                    try {
+                      grs.downloadApk(
+                        downloadUrl:
+                            grs.latestSync.assets.first.browserDownloadUrl,
+                        apkName: grs.latestSync.assets.first.name,
+                      );
+                    } catch (e) {
+                      print('安装失败: $e');
+                    }
+                  }
+                },
+                child: Text('Test'),
+              );
             }
+            return SizedBox();
           },
-          child: Text('Test'),
         ),
       ),
     );

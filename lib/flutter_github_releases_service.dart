@@ -1,7 +1,10 @@
 library flutter_github_releases_service;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_github_releases_service/dto/github_releases/github_releases.dto.dart';
@@ -18,8 +21,46 @@ class GithubReleasesService {
     @required this.owner,
     @required this.repo,
   }) {
-    FlutterDownloader.initialize();
+    FlutterDownloader.initialize().then((_) {
+      _initialized.complete(true);
+      IsolateNameServer.registerPortWithName(
+          _port.sendPort, 'downloader_send_port');
+      _port.listen((dynamic data) async {
+        String id = data[0];
+        DownloadTaskStatus status = data[1];
+
+        if (status == DownloadTaskStatus.failed) {
+          return Future.error('url $_downloadUrl, DownloadTaskStatus $status');
+        }
+        if (_taskId == id && status == DownloadTaskStatus.complete) {
+          File df = File(path.joinAll([_savedDir.path, _apkName]));
+          if (await df.exists()) {
+            _installApk(df.path, await packageName);
+          }
+        }
+      });
+      FlutterDownloader.registerCallback(_downloadCallback);
+    });
   }
+
+  static void _downloadCallback(
+    String id,
+    DownloadTaskStatus status,
+    int progress,
+  ) {
+    final SendPort send =
+        IsolateNameServer.lookupPortByName('downloader_send_port');
+    send.send([id, status, progress]);
+  }
+
+  String _downloadUrl;
+  String _taskId;
+  Directory _savedDir;
+  String _apkName;
+
+  ReceivePort _port = ReceivePort();
+  Completer<bool> _initialized = Completer();
+  Future<bool> get initialized => _initialized.future;
 
   final String owner;
   final String repo;
@@ -122,31 +163,18 @@ class GithubReleasesService {
 
     _permissisonReady = await _checkPermission();
     if (!_permissisonReady) return;
-
-    Directory savedDir = await getExternalStorageDirectory();
-    // Create if the directory does not exist
-    if (!await savedDir.exists()) {
-      savedDir.create();
-    }
-    final taskId = await FlutterDownloader.enqueue(
+    _apkName = apkName;
+    _downloadUrl = downloadUrl;
+    _savedDir = await getExternalStorageDirectory();
+    if (!await _savedDir.exists()) _savedDir.create();
+    _taskId = await FlutterDownloader.enqueue(
       url: downloadUrl,
-      savedDir: savedDir.path,
+      savedDir: _savedDir.path,
       showNotification:
           true, //show download progress in status bar (for Android)
       openFileFromNotification:
           true, // click on notification to open downloaded file (for Android)
     );
-    FlutterDownloader.registerCallback((id, status, progress) async {
-      if (status == DownloadTaskStatus.failed) {
-        return Future.error('url $downloadUrl DownloadTaskStatus $status');
-      }
-      if (taskId == id && status == DownloadTaskStatus.complete) {
-        File df = File(path.joinAll([savedDir.path, apkName]));
-        if (await df.exists()) {
-          _installApk(df.path, await packageName);
-        }
-      }
-    });
   }
 
   /// 安装指定路径的apk文件
