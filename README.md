@@ -4,6 +4,8 @@ Use github releases to update the app.
 
 Note: This has only been tested on Android.
 
+# This library is developed on the `flutter master` branch
+
 ## install
 ```
 dependencies:
@@ -22,6 +24,7 @@ package com.example.flutter_demo;  // Set your package name
 import io.flutter.app.FlutterApplication;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugins.GeneratedPluginRegistrant;
+import vn.hunghd.flutterdownloader.FlutterDownloaderPlugin;
 
 public class MyApplication extends FlutterApplication implements PluginRegistry.PluginRegistrantCallback {
     @Override
@@ -38,8 +41,9 @@ Or Kotlin:
 package com.example.flutter_demo // Set your package name
 
 import io.flutter.app.FlutterApplication
-import io.flutter.plugin.common.PluginRegistry;
+import io.flutter.plugin.common.PluginRegistry
 import io.flutter.plugins.GeneratedPluginRegistrant
+import vn.hunghd.flutterdownloader.FlutterDownloaderPlugin
 
 internal class MyApplication : FlutterApplication(), PluginRegistry.PluginRegistrantCallback {
     override fun registerWith(registry: PluginRegistry) {

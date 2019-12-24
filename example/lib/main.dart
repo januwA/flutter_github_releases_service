@@ -1,16 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_github_releases_service/flutter_github_releases_service.dart';
 
-void main() => runApp(MyApp());
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: HomePage(),
-    );
-  }
-}
+void main() => runApp(MaterialApp(home: HomePage()));
 
 class HomePage extends StatefulWidget {
   @override
@@ -42,7 +33,7 @@ class _HomePageState extends State<HomePage> {
                   print('localVersion: ' + await grs.localVersion);
                   print(await grs.isNeedUpdate);
 
-                  if (await grs.isNeedUpdate) {
+                  if (true) {
                     try {
                       grs.downloadApk(
                         downloadUrl:
