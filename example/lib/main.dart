@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> {
                         apkName: grs.latestSync.assets.first.name,
                       );
                     } catch (e) {
-                      print('安装失败: $e');
+                      print('Install Error: $e');
                     }
                   }
                 },

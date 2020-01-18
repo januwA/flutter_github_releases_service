@@ -7,7 +7,6 @@ import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_github_releases_service/dto/github_releases/github_releases.dto.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info/package_info.dart';
 import 'package:path/path.dart' as path;
@@ -16,13 +15,26 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'dto/github_releases/github_releases.dto.dart';
+
 class GithubReleasesService {
+  Completer<void> _initialized = Completer();
+
+  /// 初始化后才能使用
+  Future<void> get initialized => _initialized.future;
+
+  /// 用户名
+  final String owner;
+
+  /// 仓库名
+  final String repo;
+
   GithubReleasesService({
     @required this.owner,
     @required this.repo,
   }) {
     FlutterDownloader.initialize().then((_) {
-      _initialized.complete(true);
+      _initialized.complete();
       IsolateNameServer.registerPortWithName(
           _port.sendPort, 'downloader_send_port');
       _port.listen((dynamic data) async {
@@ -59,11 +71,7 @@ class GithubReleasesService {
   String _apkName;
 
   ReceivePort _port = ReceivePort();
-  Completer<bool> _initialized = Completer();
-  Future<bool> get initialized => _initialized.future;
 
-  final String owner;
-  final String repo;
   final String baseUrl = 'https://api.github.com/repos';
   String get releasesUrl => '$baseUrl/$owner/$repo/releases';
   String get latestUrl => '$baseUrl/$owner/$repo/releases/latest';
@@ -158,9 +166,6 @@ class GithubReleasesService {
     @required String downloadUrl,
     @required String apkName,
   }) async {
-    assert(downloadUrl != null);
-    assert(apkName != null);
-
     _permissisonReady = await _checkPermission();
     if (!_permissisonReady) return;
     _apkName = apkName;
@@ -216,7 +221,7 @@ class VersionXYZ {
   ///
   /// ```dart
   /// assert(VersionXYZ('5.0.2') > VersionXYZ('5.0.1'), true);
-  /// assert(VersionXYZ('5.0.2') > VersionXYZ([5,0,1]), true);
+  /// assert(VersionXYZ('5.0.2') > VersionXYZ([5.0.1]), true);
   /// ```
   ///
   /// See also:
