@@ -1,3 +1,7 @@
+## 0.4.3
+
+* Prepare for 1.0.0 version of sensors and package_info. ([dart_lsc](http://github.com/amirh/dart_lsc))
+
 ## [0.4.0] - 2019-10-19
 
 * 修复BUG，使用方式发生变化
