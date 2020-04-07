@@ -6,8 +6,8 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:ajanuw_http/ajanuw_http.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:package_info/package_info.dart';
 import 'package:path/path.dart' as path;
 import 'package:install_plugin/install_plugin.dart' show InstallPlugin;
@@ -15,7 +15,12 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'version_xyz.dart';
 import 'dto/github_releases/github_releases.dto.dart';
+
+export 'version_xyz.dart';
+
+const String _BASEURL = 'https://api.github.com/repos';
 
 class GithubReleasesService {
   Completer<void> _initialized = Completer();
@@ -28,6 +33,10 @@ class GithubReleasesService {
 
   /// 仓库名
   final String repo;
+
+  final _api = AjanuwHttp()..config.baseURL = _BASEURL;
+  String get releasesUrl => '$owner/$repo/releases';
+  String get latestUrl => '$owner/$repo/releases/latest';
 
   GithubReleasesService({
     @required this.owner,
@@ -72,10 +81,6 @@ class GithubReleasesService {
 
   ReceivePort _port = ReceivePort();
 
-  final String baseUrl = 'https://api.github.com/repos';
-  String get releasesUrl => '$baseUrl/$owner/$repo/releases';
-  String get latestUrl => '$baseUrl/$owner/$repo/releases/latest';
-
   bool _permissisonReady = false;
 
   List<GithubReleasesDto> _releases;
@@ -84,10 +89,9 @@ class GithubReleasesService {
       _releases ?? await getReleases();
   Future<List<GithubReleasesDto>> getReleases() async {
     try {
-      var r = await http.get(releasesUrl);
+      var r = await _api.get(releasesUrl);
       if (r.statusCode != HttpStatus.ok) {
-        return Future.error(
-            'GithubReleasesService Error: releases $latestUrl statusCode ${r.statusCode}');
+        throw 'GithubReleasesService Error: releases $latestUrl statusCode ${r.statusCode}';
       }
       List body = jsonDecode(r.body);
       _releases = body
@@ -96,7 +100,7 @@ class GithubReleasesService {
           .toList();
       return _releases;
     } catch (e) {
-      return Future.error(e);
+      rethrow;
     }
   }
 
@@ -105,15 +109,15 @@ class GithubReleasesService {
   Future<GithubReleasesDto> get latest async => _latest ?? await getLatest();
   Future<GithubReleasesDto> getLatest() async {
     try {
-      var r = await http.get(latestUrl);
+      var r = await _api.get(latestUrl);
       if (r.statusCode != HttpStatus.ok) {
-        return Future.error(
-            'GithubReleasesService Error: latest $latestUrl statusCode ${r.statusCode}');
+        throw 'GithubReleasesService Error: latest $latestUrl statusCode ${r.statusCode}';
       }
+      print(r.body);
       _latest = GithubReleasesDto.fromJson(r.body);
       return _latest;
     } catch (e) {
-      return Future.error(e);
+      rethrow;
     }
   }
 
@@ -170,16 +174,21 @@ class GithubReleasesService {
     if (!_permissisonReady) return;
     _apkName = apkName;
     _downloadUrl = downloadUrl;
-    _savedDir = await getExternalStorageDirectory();
-    if (!await _savedDir.exists()) _savedDir.create();
+    var savedDir = await _createSavePath();
     _taskId = await FlutterDownloader.enqueue(
       url: downloadUrl,
-      savedDir: _savedDir.path,
+      savedDir: savedDir,
       showNotification:
           true, //show download progress in status bar (for Android)
       openFileFromNotification:
           true, // click on notification to open downloaded file (for Android)
     );
+  }
+
+  Future<String> _createSavePath() async {
+    _savedDir = await getExternalStorageDirectory();
+    if (!await _savedDir.exists()) _savedDir.create();
+    return _savedDir.path;
   }
 
   /// 安装指定路径的apk文件
@@ -191,81 +200,22 @@ class GithubReleasesService {
   Future<bool> _checkPermission() async {
     if (Platform.isAndroid) {
       // 检查当前权限状态。
-      PermissionStatus permission = await PermissionHandler()
-          .checkPermissionStatus(PermissionGroup.storage);
+      var permission = Permission.storage;
+      PermissionStatus _permissionStatus = await permission.status;
 
-      if (permission != PermissionStatus.granted) {
+      if (_permissionStatus != PermissionStatus.granted) {
         // 没有权限，发起请求权限
-        Map<PermissionGroup, PermissionStatus> permissions =
-            await PermissionHandler()
-                .requestPermissions([PermissionGroup.storage]);
-        if (permissions[PermissionGroup.storage] == PermissionStatus.granted) {
-          return true;
-        }
+        _permissionStatus = await permission.request();
+        return _permissionStatus == PermissionStatus.granted;
       } else {
         return true;
       }
     } else {
       return true;
     }
-    return false;
   }
 
   dispose() {
     FlutterDownloader.registerCallback(null);
-  }
-}
-
-class VersionXYZ {
-  /// 'x.y.z' or [0,1,0]
-  ///
-  /// ```dart
-  /// assert(VersionXYZ('5.0.2') > VersionXYZ('5.0.1'), true);
-  /// assert(VersionXYZ('5.0.2') > VersionXYZ([5.0.1]), true);
-  /// ```
-  ///
-  /// See also:
-  ///
-  /// * [Semantic Versioning 2.0.0](https://semver.org/)
-  ///
-  VersionXYZ(dynamic xyz) {
-    var v;
-    if (xyz is String) {
-      v = xyz.split('.').map<int>((s) => int.parse(s)).toList();
-    } else if (xyz is List<int>) {
-      v = xyz;
-    }
-    x = v[0];
-    y = v[1];
-    z = v[2];
-  }
-
-  int x;
-  int y;
-  int z;
-
-  @override
-  String toString() => '$x.$y.$z';
-
-  bool operator >(VersionXYZ other) {
-    if (x > other.x) {
-      return true;
-    } else if (x < other.x) {
-      return false;
-    } else {
-      if (y > other.y) {
-        return true;
-      } else if (y < other.y) {
-        return false;
-      } else {
-        if (z > other.z) {
-          return true;
-        } else if (z < other.z) {
-          return false;
-        } else {
-          return false;
-        }
-      }
-    }
   }
 }

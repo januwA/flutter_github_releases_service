@@ -1,52 +1,47 @@
 import 'package:flutter_github_releases_service/flutter_github_releases_service.dart';
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('GithubReleasesService', () {
-    GithubReleasesService githubReleasesService;
-    String owner;
-    String repo;
-    setUpAll(() {
-      owner = 'januwA';
-      repo = 'flutter_anime_app';
-      githubReleasesService = GithubReleasesService(owner: owner, repo: repo);
-    });
-    test('constructor', () {
-      expect(githubReleasesService.owner, owner);
-      expect(githubReleasesService.repo, repo);
-    });
+  // group('GithubReleasesService', () {
+  //   GithubReleasesService githubReleasesService;
+  //   String owner;
+  //   String repo;
+  //   setUpAll(() {
+  //     owner = 'januwA';
+  //     repo = 'flutter_anime_app';
+  //     githubReleasesService = GithubReleasesService(owner: owner, repo: repo);
+  //   });
+  //   test('constructor', () {
+  //     expect(githubReleasesService.owner, owner);
+  //     expect(githubReleasesService.repo, repo);
+  //   });
 
-    test('url', () {
-      expect(githubReleasesService.latestUrl,
-          'https://api.github.com/repos/$owner/$repo/releases/latest');
-      expect(githubReleasesService.releasesUrl,
-          'https://api.github.com/repos/$owner/$repo/releases');
-    });
+  //   test('latest', () async {
+  //     await githubReleasesService.initialized;
+  //     var data = await githubReleasesService.latest;
+  //     expect(data != null, true);
+  //     expect(githubReleasesService.latestSync != null, true);
+  //   });
 
-    test('latest', () async {
-      var data = await githubReleasesService.latest;
-      expect(data != null, true);
-      expect(githubReleasesService.latestSync != null, true);
-    });
+  //   test('releases', () async {
+  //     await githubReleasesService.initialized;
+  //     var data = await githubReleasesService.releases;
+  //     expect(data != null, true);
+  //     expect(data.isNotEmpty, true);
+  //     expect(githubReleasesService.releasesSync != null, true);
+  //   });
 
-    test('releases', () async {
-      var data = await githubReleasesService.releases;
-      expect(data != null, true);
-      expect(data.isNotEmpty, true);
-      expect(githubReleasesService.releasesSync != null, true);
-    });
+  //   test('latestVertion', () async {
+  //     String latestVertion = await githubReleasesService.latestVersion;
+  //     expect(latestVertion != null, true);
+  //   });
 
-    test('latestVertion', () async {
-      String latestVertion = await githubReleasesService.latestVersion;
-      expect(latestVertion != null, true);
-    });
-
-    tearDownAll(() async {
-      githubReleasesService = null;
-      owner = null;
-      repo = null;
-    });
-  });
+  //   tearDownAll(() async {
+  //     githubReleasesService = null;
+  //     owner = null;
+  //     repo = null;
+  //   });
+  // });
 
   group('VersionXYZ Test', () {
     test('0.1.0 > 1.1.1 is false', () {
