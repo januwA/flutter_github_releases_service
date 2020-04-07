@@ -17,7 +17,7 @@ class VersionXYZ {
       _v = xyz;
     }
   }
-  
+
   List<int> _v;
   int get x => _v[0];
   int get y => _v[1];

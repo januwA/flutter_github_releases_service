@@ -1,3 +1,7 @@
+## 0.4.5 - 2020-4-7
+
+* 修复[分析问题和建议](https://pub.flutter-io.cn/packages/flutter_github_releases_service#-analysis-tab-)
+
 ## 0.4.4 - 2020-4-7
 
 * 升级第三方依赖，无API变更
