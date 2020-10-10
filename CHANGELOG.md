@@ -1,3 +1,10 @@
+## 0.5.0 - 2020-10-10
+
+* API更新，增加gitee配置
+* update pubspect
+* update example
+* update readme
+
 ## 0.4.5 - 2020-4-7
 
 * 修复[分析问题和建议](https://pub.flutter-io.cn/packages/flutter_github_releases_service#-analysis-tab-)

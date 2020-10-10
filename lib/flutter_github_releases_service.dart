@@ -8,6 +8,7 @@ import 'dart:ui';
 
 import 'package:ajanuw_http/ajanuw_http.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_github_releases_service/releases_dto.dart';
 import 'package:package_info/package_info.dart';
 import 'package:path/path.dart' as path;
 import 'package:install_plugin/install_plugin.dart' show InstallPlugin;
@@ -16,13 +17,17 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'version_xyz.dart';
-import 'dto/github_releases/github_releases.dto.dart';
 
 export 'version_xyz.dart';
 
-const String _BASEURL = 'https://api.github.com/repos';
+/// gitee
+/// https://gitee.com/api/v5/repos/januwA/flutter_anime_app/releases
+/// https://gitee.com/api/v5/repos/januwA/flutter_anime_app/releases/latest
 
 class GithubReleasesService {
+  static final String github = 'https://api.github.com/repos';
+  static final String gitee = 'https://gitee.com/api/v5/repos';
+
   Completer<void> _initialized = Completer();
 
   /// 初始化后才能使用
@@ -34,34 +39,61 @@ class GithubReleasesService {
   /// 仓库名
   final String repo;
 
-  final _api = AjanuwHttp()..config.baseURL = _BASEURL;
-  String get releasesUrl => '$owner/$repo/releases';
+  final _api = AjanuwHttp();
+
   String get latestUrl => '$owner/$repo/releases/latest';
+
+  /// release 最后的版本
+  ReleasesDto latest;
+
+  /// 当前app的包信息
+  PackageInfo pinfo;
 
   GithubReleasesService({
     @required this.owner,
     @required this.repo,
+    String api,
   }) {
-    FlutterDownloader.initialize().then((_) {
-      _initialized.complete();
-      IsolateNameServer.registerPortWithName(
-          _port.sendPort, 'downloader_send_port');
-      _port.listen((dynamic data) async {
-        String id = data[0];
-        DownloadTaskStatus status = data[1];
+    _api.config.baseURL = api ?? github;
+    _init();
+  }
 
-        if (status == DownloadTaskStatus.failed) {
-          return Future.error('url $_downloadUrl, DownloadTaskStatus $status');
+  _init() async {
+    // 获取releases latest
+    try {
+      var r = await _api.get(latestUrl);
+      if (r.statusCode != HttpStatus.ok) {
+        throw '[GithubReleasesService] Error: latest $latestUrl statusCode ${r.statusCode}';
+      }
+      latest = ReleasesDto.fromJson(jsonDecode(r.body));
+    } catch (e) {
+      rethrow;
+    }
+
+    // app包信息
+    pinfo = await PackageInfo.fromPlatform();
+
+    // 初始化flutter_download
+    await FlutterDownloader.initialize();
+    _initialized.complete();
+
+    IsolateNameServer.registerPortWithName(
+        _port.sendPort, 'downloader_send_port');
+    _port.listen((dynamic data) async {
+      String id = data[0];
+      DownloadTaskStatus status = data[1];
+
+      if (status == DownloadTaskStatus.failed) {
+        return Future.error('url $_downloadUrl, DownloadTaskStatus $status');
+      }
+      if (_taskId == id && status == DownloadTaskStatus.complete) {
+        File df = File(path.joinAll([_savedDir.path, _apkName]));
+        if (await df.exists()) {
+          _installApk(df.path, packageName);
         }
-        if (_taskId == id && status == DownloadTaskStatus.complete) {
-          File df = File(path.joinAll([_savedDir.path, _apkName]));
-          if (await df.exists()) {
-            _installApk(df.path, await packageName);
-          }
-        }
-      });
-      FlutterDownloader.registerCallback(_downloadCallback);
+      }
     });
+    FlutterDownloader.registerCallback(_downloadCallback);
   }
 
   static void _downloadCallback(
@@ -83,61 +115,14 @@ class GithubReleasesService {
 
   bool _permissisonReady = false;
 
-  List<GithubReleasesDto> _releases;
-  List<GithubReleasesDto> get releasesSync => _releases;
-  Future<List<GithubReleasesDto>> get releases async =>
-      _releases ?? await getReleases();
-  Future<List<GithubReleasesDto>> getReleases() async {
-    try {
-      var r = await _api.get(releasesUrl);
-      if (r.statusCode != HttpStatus.ok) {
-        throw 'GithubReleasesService Error: releases $latestUrl statusCode ${r.statusCode}';
-      }
-      List body = jsonDecode(r.body);
-      _releases = body
-          .map<GithubReleasesDto>(
-              (r) => GithubReleasesDto.fromJson(jsonEncode(r)))
-          .toList();
-      return _releases;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  GithubReleasesDto _latest;
-  GithubReleasesDto get latestSync => _latest;
-  Future<GithubReleasesDto> get latest async => _latest ?? await getLatest();
-  Future<GithubReleasesDto> getLatest() async {
-    try {
-      var r = await _api.get(latestUrl);
-      if (r.statusCode != HttpStatus.ok) {
-        throw 'GithubReleasesService Error: latest $latestUrl statusCode ${r.statusCode}';
-      }
-      print(r.body);
-      _latest = GithubReleasesDto.fromJson(r.body);
-      return _latest;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
   /// latest version
-  Future<String> get latestVersion async => (await latest).tagName;
-  String get latestVersionSync => _latest?.tagName;
+  String get latestVersion => latest.tagName;
 
   /// local version
-  String _localVersion;
-  String get localVersionSync => _localVersion;
-  Future<String> get localVersion async =>
-      _localVersion ?? await _getLocalVersion();
-  Future<String> _getLocalVersion() async {
-    _localVersion = (await PackageInfo.fromPlatform()).version;
-    return _localVersion;
-  }
+  String get localVersion => pinfo.version;
 
   /// com.xxx
-  Future<String> get packageName async =>
-      (await PackageInfo.fromPlatform()).packageName;
+  String get packageName => pinfo.packageName;
 
   /// Note: To use this property your version control must be standard x.y.z semantics
   ///
@@ -146,8 +131,7 @@ class GithubReleasesService {
   /// See slso:
   ///
   /// * [Semantic Versioning 2.0.0](https://semver.org/)
-  Future<bool> get isNeedUpdate async =>
-      VersionXYZ(await latestVersion) > VersionXYZ(await localVersion);
+  bool get isNeedUpdate => VersionXYZ(latestVersion) > VersionXYZ(localVersion);
 
   /// download apk and install:
   ///
@@ -215,7 +199,7 @@ class GithubReleasesService {
     }
   }
 
-  dispose() {
+  void dispose() {
     FlutterDownloader.registerCallback(null);
   }
 }
