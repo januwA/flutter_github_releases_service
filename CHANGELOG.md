@@ -1,3 +1,7 @@
+## 0.5.1 - 2021-3-12
+
+* refactor: update packages
+
 ## 0.5.0 - 2020-10-10
 
 * API更新，增加gitee配置
