@@ -1,6 +1,6 @@
 name: flutter_github_releases_service
 description: Use github releases to update the app.
-version: 0.5.1
+version: 0.5.2
 homepage: https://github.com/januwA/flutter_github_releases_service
 
 environment:

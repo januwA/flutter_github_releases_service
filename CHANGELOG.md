@@ -1,4 +1,4 @@
-## 0.5.1 - 2021-3-12
+## 0.5.2 - 2021-3-12
 
 * refactor: update packages
 
