@@ -9,7 +9,7 @@ import 'dart:ui';
 import 'package:ajanuw_http/ajanuw_http.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_github_releases_service/releases_dto.dart';
-import 'package:package_info/package_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as path;
 import 'package:install_plugin/install_plugin.dart' show InstallPlugin;
 import 'package:flutter_downloader/flutter_downloader.dart';
