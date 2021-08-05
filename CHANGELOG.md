@@ -1,3 +1,7 @@
+## 0.5.2+1
+
+* Migrated from the deprecated package_info plugin to package_info_plus.
+
 ## 0.5.2 - 2021-3-12
 
 * refactor: update packages
